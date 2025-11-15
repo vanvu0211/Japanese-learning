@@ -88,7 +88,7 @@ const App = () => {
   const getAllCards = () => [...currentData.basic, ...currentData.dakuten, ...currentData.combo];
   const currentCards = category === 'all' ? getAllCards() : currentData[category];
 
-  // Tạo thứ tự ngẫu nhiên cho quiz khi thay đổi category/script/mode
+  // Tạo thứ tự ngẫu nhiên cho quiz
   useEffect(() => {
     if (mode === 'quiz') {
       const indices = Array.from({ length: currentCards.length }, (_, i) => i);
@@ -171,22 +171,92 @@ const App = () => {
     }, 1500);
   };
 
-  // Table View
-  const TableView = () => (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="grid grid-cols-5 gap-3">
-        {currentCards.map(([char, romaji], idx) => (
-          <div
-            key={idx}
-            className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 cursor-default transition-all hover:scale-105 hover:shadow-md"
-          >
-            <div className="text-4xl font-bold text-center text-gray-800 mb-2">{char}</div>
-            <div className="text-sm text-center text-gray-600 font-medium">{romaji}</div>
+  // Table View - Bảng chuẩn Gojūon cho cả Hiragana & Katakana
+  const TableView = () => {
+    const isBasic = category === 'basic';
+
+    // Bảng chuẩn Hiragana
+    const hiraganaTable = [
+      ['あ a', 'い i', 'う u', 'え e', 'お o'],
+      ['か ka', 'き ki', 'く ku', 'け ke', 'こ ko'],
+      ['さ sa', 'し shi', 'す su', 'せ se', 'そ so'],
+      ['た ta', 'ち chi', 'つ tsu', 'て te', 'と to'],
+      ['な na', 'に ni', 'ぬ nu', 'ね ne', 'の no'],
+      ['は ha', 'ひ hi', 'ふ fu', 'へ he', 'ほ ho'],
+      ['ま ma', 'み mi', 'む mu', 'め me', 'も mo'],
+      ['や ya', '', 'ゆ yu', '', 'よ yo'],
+      ['ら ra', 'り ri', 'る ru', 'れ re', 'ろ ro'],
+      ['わ wa', '', '', '', 'を wo'],
+      ['ん n', '', '', '', '']
+    ];
+
+    // Bảng chuẩn Katakana
+    const katakanaTable = [
+      ['ア a', 'イ i', 'ウ u', 'エ e', 'オ o'],
+      ['カ ka', 'キ ki', 'ク ku', 'ケ ke', 'コ ko'],
+      ['サ sa', 'シ shi', 'ス su', 'セ se', 'ソ so'],
+      ['タ ta', 'チ chi', 'ツ tsu', 'テ te', 'ト to'],
+      ['ナ na', 'ニ ni', 'ヌ nu', 'ネ ne', 'ノ no'],
+      ['ハ ha', 'ヒ hi', 'フ fu', 'ヘ he', 'ホ ho'],
+      ['マ ma', 'ミ mi', 'ム mu', 'メ me', 'モ mo'],
+      ['ヤ ya', '', 'ユ yu', '', 'ヨ yo'],
+      ['ラ ra', 'リ ri', 'ル ru', 'レ re', 'ロ ro'],
+      ['ワ wa', '', '', '', 'ヲ wo'],
+      ['ン n', '', '', '', '']
+    ];
+
+    const tableData = script === 'hiragana' ? hiraganaTable : katakanaTable;
+
+    // Nếu không phải basic → dùng lưới phẳng
+    if (!isBasic) {
+      return (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="grid grid-cols-5 gap-3">
+            {currentCards.map(([char, romaji], idx) => (
+              <div
+                key={idx}
+                className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 cursor-default transition-all hover:scale-105 hover:shadow-md text-center"
+              >
+                <div className="text-4xl font-bold text-gray-800 mb-1">{char}</div>
+                <div className="text-sm text-gray-600 font-medium">{romaji}</div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+      );
+    }
+
+    // Bảng chuẩn Gojūon
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6 overflow-x-auto">
+        <div className="min-w-max">
+          <table className="w-full border-collapse">
+            <tbody>
+              {tableData.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {row.map((cell, colIndex) => {
+                    if (!cell) {
+                      return <td key={colIndex} className="p-3"></td>;
+                    }
+                    const [char, romaji] = cell.split(' ');
+                    return (
+                      <td
+                        key={colIndex}
+                        className="p-3 text-center border border-gray-300 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all hover:scale-105 cursor-default"
+                      >
+                        <div className="text-4xl font-bold text-gray-800 mb-1">{char}</div>
+                        <div className="text-sm text-gray-600 font-medium">{romaji}</div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Flashcard View
   const FlashcardView = () => (
@@ -355,7 +425,7 @@ const App = () => {
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-xl font-bold mb-3 text-gray-800">Hướng dẫn:</h3>
           <ul className="space-y-2 text-gray-700">
-            <li><strong>Bảng:</strong> Xem bảng chữ cái</li>
+            <li><strong>Bảng:</strong> Xem bảng chữ cái chuẩn Nhật Bản (Gojūon)</li>
             <li><strong>Flashcard:</strong> Click vào thẻ để xem romaji</li>
             <li><strong>Kiểm tra:</strong> Nhập romaji và kiểm tra kiến thức. Những câu sai sẽ được ôn lại sau khi hoàn thành.</li>
             <li><strong>Tổng hợp tất cả:</strong> Luyện tập với {getAllCards().length} ký tự</li>
@@ -372,37 +442,16 @@ const App = () => {
               </p>
             </div>
             <div className="flex gap-6 text-sm">
-              <a
-                href="https://www.facebook.com/nguyenvanvu0211"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15h-2.5v-3H8v-2c0-1.38 1.12-2.5 2.5-2.5H13v3h-2c-.28 0-.5.22-.5.5v1.5h3l-.5 3H13v6.8c4.56-.93 8-4.96 8-9.8z"/>
-                </svg>
+              <a href="https://www.facebook.com/nguyenvanvu0211" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15h-2.5v-3H8v-2c0-1.38 1.12-2.5 2.5-2.5H13v3h-2c-.28 0-.5.22-.5.5v1.5h3l-.5 3H13v6.8c4.56-.93 8-4.96 8-9.8z"/></svg>
                 Facebook
               </a>
-              <a
-                href="https://github.com/vanvu0211"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-gray-800 hover:text-black transition-colors font-medium"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.334-1.753-1.334-1.753-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
+              <a href="https://github.com/vanvu0211" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-800 hover:text-black transition-colors font-medium">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.334-1.753-1.334-1.753-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
                 GitHub
               </a>
-              <a
-                href="https://www.linkedin.com/in/vu-nguyen-van-872343351/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-700 hover:text-blue-900 transition-colors font-medium"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.3c-.966 0-1.75-.79-1.75-1.76s.784-1.76 1.75-1.76 1.75.79 1.75 1.76-.784 1.76-1.75 1.76zm13.5 11.3h-3v-5.4c0-1.29-.025-2.95-1.8-2.95-1.8 0-2.075 1.4-2.075 2.85v5.5h-3v-10h2.88v1.37h.04c.4-.76 1.38-1.56 2.84-1.56 3.04 0 3.6 2 3.6 4.59v5.6z"/>
-                </svg>
+              <a href="https://www.linkedin.com/in/vu-nguyen-van-872343351/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-700 hover:text-blue-900 transition-colors font-medium">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.3c-.966 0-1.75-.79-1.75-1.76s.784-1.76 1.75-1.76 1.75.79 1.75 1.76-.784 1.76-1.75 1.76zm13.5 11.3h-3v-5.4c0-1.29-.025-2.95-1.8-2.95-1.8 0-2.075 1.4-2.075 2.85v5.5h-3v-10h2.88v1.37h.04c.4-.76 1.38-1.56 2.84-1.56 3.04 0 3.6 2 3.6 4.59v5.6z"/></svg>
                 LinkedIn
               </a>
             </div>
