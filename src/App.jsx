@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Check, X, BookOpen, Grid3x3 } from 'lucide-react';
 
 const App = () => {
@@ -89,7 +89,7 @@ const App = () => {
   const currentCards = category === 'all' ? getAllCards() : currentData[category];
 
   // Tạo thứ tự ngẫu nhiên cho quiz khi thay đổi category/script/mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === 'quiz') {
       const indices = Array.from({ length: currentCards.length }, (_, i) => i);
       for (let i = indices.length - 1; i > 0; i--) {
@@ -125,29 +125,27 @@ const App = () => {
     const currentCardIndex = currentOrderList[flashcardIndex];
     const correct = currentCards[currentCardIndex][1];
     const isCorrect = userInput.trim().toLowerCase() === correct.toLowerCase();
-
     setFeedback(isCorrect ? 'correct' : 'incorrect');
-    
-    // Nếu sai, thêm vào danh sách câu sai (chỉ khi không phải review mode)
+
     if (!isCorrect && !isReviewMode) {
       setWrongAnswers(prev => [...prev, currentCardIndex]);
     }
-    
+
     setScore({
       correct: score.correct + (isCorrect ? 1 : 0),
       total: score.total + 1
     });
 
-    // Kiểm tra nếu đã hết câu hỏi
     setTimeout(() => {
       const nextIndex = flashcardIndex + 1;
       const totalQuestions = isReviewMode ? wrongAnswers.length : quizOrder.length;
-      
+
       if (nextIndex >= totalQuestions) {
-        // Nếu đang ở review mode hoặc không có câu sai, kết thúc
+        const finalCorrect = score.correct + (isCorrect ? 1 : 0);
+        const finalTotal = score.total + 1;
+
         if (isReviewMode || wrongAnswers.length === 0) {
-          alert(`Hoàn thành! Điểm số: ${score.correct + (isCorrect ? 1 : 0)}/${score.total + 1} (${Math.round(((score.correct + (isCorrect ? 1 : 0)) / (score.total + 1)) * 100)}%)`);
-          // Reset quiz
+          alert(`Hoàn thành! Điểm số: ${finalCorrect}/${finalTotal} (${Math.round((finalCorrect / finalTotal) * 100)}%)`);
           const indices = Array.from({ length: currentCards.length }, (_, i) => i);
           for (let i = indices.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -159,7 +157,6 @@ const App = () => {
           setIsReviewMode(false);
           setScore({ correct: 0, total: 0 });
         } else {
-          // Chuyển sang review mode với những câu sai
           alert(`Bạn đã trả lời sai ${wrongAnswers.length} câu. Hãy ôn lại những câu đó!`);
           setIsReviewMode(true);
           setFlashcardIndex(0);
@@ -167,7 +164,9 @@ const App = () => {
         setUserInput('');
         setFeedback(null);
       } else {
-        nextCard();
+        setFlashcardIndex(nextIndex);
+        setUserInput('');
+        setFeedback(null);
       }
     }, 1500);
   };
@@ -205,7 +204,6 @@ const App = () => {
           </div>
         )}
       </div>
-
       <div className="flex gap-4 mb-6">
         <button onClick={shuffleCards} className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
           <RefreshCw size={20} /> Ngẫu nhiên
@@ -220,9 +218,8 @@ const App = () => {
 
   // Quiz View
   const QuizView = () => {
-    const inputRef = React.useRef(null);
-
-    React.useEffect(() => {
+    const inputRef = useRef(null);
+    useEffect(() => {
       if (inputRef.current && !feedback) {
         inputRef.current.focus();
       }
@@ -239,7 +236,6 @@ const App = () => {
           <div className="text-8xl font-bold text-center text-gray-800 mb-8">
             {currentCard[0]}
           </div>
-
           <input
             ref={inputRef}
             type="text"
@@ -254,7 +250,6 @@ const App = () => {
             }`}
             autoFocus
           />
-
           {feedback && (
             <div className={`flex items-center justify-center gap-2 mb-4 text-lg font-semibold ${
               feedback === 'correct' ? 'text-green-600' : 'text-red-600'
@@ -266,7 +261,6 @@ const App = () => {
               )}
             </div>
           )}
-
           <button
             onClick={checkAnswer}
             disabled={!userInput.trim() || feedback}
@@ -275,7 +269,6 @@ const App = () => {
             Kiểm tra
           </button>
         </div>
-
         <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600">{score.correct}/{score.total}</div>
@@ -292,7 +285,6 @@ const App = () => {
             )}
           </div>
         </div>
-
         <div className="text-gray-600">
           Câu {flashcardIndex + 1} / {totalQuestions}
           {isReviewMode && <span className="text-orange-600 ml-2">(Ôn tập)</span>}
@@ -325,7 +317,6 @@ const App = () => {
                 </button>
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Bộ chữ</label>
               <div className="flex gap-2">
@@ -337,7 +328,6 @@ const App = () => {
                 </button>
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Loại</label>
               <select
@@ -371,6 +361,53 @@ const App = () => {
             <li><strong>Tổng hợp tất cả:</strong> Luyện tập với {getAllCards().length} ký tự</li>
           </ul>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-12 bg-white rounded-lg shadow-lg p-6 border-t-4 border-indigo-500">
+          <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+            <div className="mb-4 md:mb-0">
+              <p className="text-sm text-gray-600">
+                © {new Date().getFullYear()} <span className="font-semibold text-indigo-600">VuGoJP</span>. 
+                Học tiếng Nhật dễ dàng hơn với công cụ miễn phí.
+              </p>
+            </div>
+            <div className="flex gap-6 text-sm">
+              <a
+                href="https://www.facebook.com/nguyenvanvu0211"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15h-2.5v-3H8v-2c0-1.38 1.12-2.5 2.5-2.5H13v3h-2c-.28 0-.5.22-.5.5v1.5h3l-.5 3H13v6.8c4.56-.93 8-4.96 8-9.8z"/>
+                </svg>
+                Facebook
+              </a>
+              <a
+                href="https://github.com/vanvu0211"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-gray-800 hover:text-black transition-colors font-medium"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.334-1.753-1.334-1.753-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                GitHub
+              </a>
+              <a
+                href="https://www.linkedin.com/in/vu-nguyen-van-872343351/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-blue-700 hover:text-blue-900 transition-colors font-medium"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.3c-.966 0-1.75-.79-1.75-1.76s.784-1.76 1.75-1.76 1.75.79 1.75 1.76-.784 1.76-1.75 1.76zm13.5 11.3h-3v-5.4c0-1.29-.025-2.95-1.8-2.95-1.8 0-2.075 1.4-2.075 2.85v5.5h-3v-10h2.88v1.37h.04c.4-.76 1.38-1.56 2.84-1.56 3.04 0 3.6 2 3.6 4.59v5.6z"/>
+                </svg>
+                LinkedIn
+              </a>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
