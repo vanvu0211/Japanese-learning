@@ -81,6 +81,8 @@ const App = () => {
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [feedback, setFeedback] = useState(null);
   const [quizOrder, setQuizOrder] = useState([]);
+  const [wrongAnswers, setWrongAnswers] = useState([]);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   const currentData = script === 'hiragana' ? hiraganaData : katakanaData;
   const getAllCards = () => [...currentData.basic, ...currentData.dakuten, ...currentData.combo];
@@ -98,6 +100,9 @@ const App = () => {
       setFlashcardIndex(0);
       setUserInput('');
       setFeedback(null);
+      setWrongAnswers([]);
+      setIsReviewMode(false);
+      setScore({ correct: 0, total: 0 });
     }
   }, [mode, category, script, currentCards.length]);
 
@@ -116,17 +121,55 @@ const App = () => {
   };
 
   const checkAnswer = () => {
-    const currentCardIndex = mode === 'quiz' ? quizOrder[flashcardIndex] : flashcardIndex;
+    const currentOrderList = isReviewMode ? wrongAnswers : quizOrder;
+    const currentCardIndex = currentOrderList[flashcardIndex];
     const correct = currentCards[currentCardIndex][1];
     const isCorrect = userInput.trim().toLowerCase() === correct.toLowerCase();
 
     setFeedback(isCorrect ? 'correct' : 'incorrect');
+    
+    // Nếu sai, thêm vào danh sách câu sai (chỉ khi không phải review mode)
+    if (!isCorrect && !isReviewMode) {
+      setWrongAnswers(prev => [...prev, currentCardIndex]);
+    }
+    
     setScore({
       correct: score.correct + (isCorrect ? 1 : 0),
       total: score.total + 1
     });
 
-    setTimeout(nextCard, 1500);
+    // Kiểm tra nếu đã hết câu hỏi
+    setTimeout(() => {
+      const nextIndex = flashcardIndex + 1;
+      const totalQuestions = isReviewMode ? wrongAnswers.length : quizOrder.length;
+      
+      if (nextIndex >= totalQuestions) {
+        // Nếu đang ở review mode hoặc không có câu sai, kết thúc
+        if (isReviewMode || wrongAnswers.length === 0) {
+          alert(`Hoàn thành! Điểm số: ${score.correct + (isCorrect ? 1 : 0)}/${score.total + 1} (${Math.round(((score.correct + (isCorrect ? 1 : 0)) / (score.total + 1)) * 100)}%)`);
+          // Reset quiz
+          const indices = Array.from({ length: currentCards.length }, (_, i) => i);
+          for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+          }
+          setQuizOrder(indices);
+          setFlashcardIndex(0);
+          setWrongAnswers([]);
+          setIsReviewMode(false);
+          setScore({ correct: 0, total: 0 });
+        } else {
+          // Chuyển sang review mode với những câu sai
+          alert(`Bạn đã trả lời sai ${wrongAnswers.length} câu. Hãy ôn lại những câu đó!`);
+          setIsReviewMode(true);
+          setFlashcardIndex(0);
+        }
+        setUserInput('');
+        setFeedback(null);
+      } else {
+        nextCard();
+      }
+    }, 1500);
   };
 
   // Table View
@@ -175,21 +218,20 @@ const App = () => {
     </div>
   );
 
-  // Quiz View – ĐÃ SỬA LỖI INPUT MẤT FOCUS
+  // Quiz View
   const QuizView = () => {
-    // Dùng ref để giữ focus
     const inputRef = React.useRef(null);
 
-    // Đảm bảo input luôn focus khi chuyển thẻ
     React.useEffect(() => {
       if (inputRef.current && !feedback) {
         inputRef.current.focus();
       }
     }, [flashcardIndex, feedback]);
 
-    // Lấy ký tự theo thứ tự ngẫu nhiên
-    const currentCardIndex = quizOrder[flashcardIndex] || 0;
+    const currentOrderList = isReviewMode ? wrongAnswers : quizOrder;
+    const currentCardIndex = currentOrderList[flashcardIndex] || 0;
     const currentCard = currentCards[currentCardIndex];
+    const totalQuestions = isReviewMode ? wrongAnswers.length : quizOrder.length;
 
     return (
       <div className="flex flex-col items-center">
@@ -243,10 +285,18 @@ const App = () => {
                 Tỷ lệ đúng: {Math.round((score.correct / score.total) * 100)}%
               </div>
             )}
+            {isReviewMode && (
+              <div className="mt-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">
+                Đang ôn lại câu sai
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="text-gray-600">Câu {flashcardIndex + 1} / {currentCards.length}</div>
+        <div className="text-gray-600">
+          Câu {flashcardIndex + 1} / {totalQuestions}
+          {isReviewMode && <span className="text-orange-600 ml-2">(Ôn tập)</span>}
+        </div>
       </div>
     );
   };
@@ -317,7 +367,7 @@ const App = () => {
           <ul className="space-y-2 text-gray-700">
             <li><strong>Bảng:</strong> Xem bảng chữ cái</li>
             <li><strong>Flashcard:</strong> Click vào thẻ để xem romaji</li>
-            <li><strong>Kiểm tra:</strong> Nhập romaji và kiểm tra kiến thức</li>
+            <li><strong>Kiểm tra:</strong> Nhập romaji và kiểm tra kiến thức. Những câu sai sẽ được ôn lại sau khi hoàn thành.</li>
             <li><strong>Tổng hợp tất cả:</strong> Luyện tập với {getAllCards().length} ký tự</li>
           </ul>
         </div>
