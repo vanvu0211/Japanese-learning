@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Animation nhấp nháy cho vị trí của bạn */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); }
+}
+.my-location > div {
+  animation: pulse 2s infinite;
+}
